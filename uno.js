@@ -52,6 +52,7 @@ uno.js — drive uno-special-edition.com from the command line
   --bot               unattended: take a table and play the match out
     --join <host>       join that player's table (otherwise host one)
     --minutes <n>       give up after n minutes          (default 15)
+    --idle <sec>        give up after n seconds with no turn (default 150)
     --color <name>      colour to pick for wilds         (default red)
     --mode/--format/--players   table settings when hosting
 
@@ -416,7 +417,8 @@ class Uno {
    * (or `maxMs` runs out). Handles readiness, turns, wilds, UNO, the
    * auto-play prompt and whatever end-of-round screens come up.
    */
-  async playout({ maxMs = 15 * 60 * 1000, color = 'red', delay = 900, host = false } = {}) {
+  async playout({ maxMs = 15 * 60 * 1000, color = 'red', delay = 900, host = false,
+                  idleMs = 150000 } = {}) {
     const t0 = Date.now();
     let idleSince = Date.now();
     let lastSeen = '';
@@ -465,7 +467,10 @@ class Uno {
       if (done) { ok(`bot: ${done}`); return; }
 
       if (!s.yourTurn) {
-        if (Date.now() - idleSince > 150000) { warn('bot: the table went quiet, stopping'); return; }
+        if (Date.now() - idleSince > idleMs) {
+          warn(`bot: no turn for ${Math.round(idleMs / 1000)}s, stopping (raise it with --idle)`);
+          return;
+        }
         await sleep(delay);
         continue;
       }
@@ -760,17 +765,19 @@ async function main() {
   if (argv.bot) {
     const color = argv.color ? String(argv.color) : 'red';
     const minutes = Number(argv.minutes) || 15;
+    // Humans think slowly; give a real opponent plenty of rope.
+    const idleMs = (Number(argv.idle) || 150) * 1000;
     if (argv.join && argv.join !== true) {
       await uno.join(String(argv.join));
       await uno.seat();
-      await uno.playout({ maxMs: minutes * 60000, color, host: false });
+      await uno.playout({ maxMs: minutes * 60000, color, host: false, idleMs });
     } else {
       await uno.create({
         mode: argv.mode ? String(argv.mode) : 'Classic',
         format: argv.format ? String(argv.format) : '1v1',
         players: argv.players ? String(argv.players) : '2',
       });
-      await uno.playout({ maxMs: minutes * 60000, color, host: true });
+      await uno.playout({ maxMs: minutes * 60000, color, host: true, idleMs });
     }
     if (!argv.keep) { await ctx.close(); return; }
   }

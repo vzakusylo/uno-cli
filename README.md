@@ -31,6 +31,7 @@ Flags:
 | `--bot` | unattended: take a table and play the match out |
 | `--join <host>` | with `--bot`: join that player's table (otherwise host one) |
 | `--minutes <n>` | with `--bot`: give up after n minutes (default 15) |
+| `--idle <sec>` | with `--bot`: give up after n seconds without a turn (default 150 — raise it when the opponent is a human) |
 | `--color <name>` | colour to pick for wilds (default red) |
 | `--mode/--format/--players` | table settings when hosting |
 
