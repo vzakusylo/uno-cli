@@ -1,0 +1,4 @@
+# browser profiles
+.profiles/
+node_modules/
+shot-*.png
